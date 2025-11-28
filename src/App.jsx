@@ -796,7 +796,7 @@ const Footer = () => {
         <div className="container mx-auto px-6 grid md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-2 mb-6">
-              <img src="/logo.png" alt="狮思智创" className="h-8 w-auto" style={{filter: 'brightness(0) invert(1)'}} />
+              <img src="/logo.png" alt="狮思智创" className="h-8 w-auto" />
               <span className="font-bold text-lg">狮思智创</span>
             </div>
             <p className="text-blue-100 text-sm leading-relaxed mb-6 opacity-80">
