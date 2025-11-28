@@ -5,19 +5,41 @@ import {
   CheckCircle, Trash2, LogOut, Download
 } from 'lucide-react';
 
+const API_BASE = 'http://localhost:3001/api';
+
 const Admin = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [requests, setRequests] = useState([]);
 
   // 检查登录状态
   useEffect(() => {
-    const adminSession = sessionStorage.getItem('adminLoggedIn');
-    if (adminSession === 'true') {
-      setIsLoggedIn(true);
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      verifyToken(token);
     }
   }, []);
+
+  // 验证 token
+  const verifyToken = async (token) => {
+    try {
+      const response = await fetch(`${API_BASE}/verify`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        setIsLoggedIn(true);
+      } else {
+        localStorage.removeItem('adminToken');
+      }
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      localStorage.removeItem('adminToken');
+    }
+  };
 
   // 加载申请数据
   useEffect(() => {
@@ -26,43 +48,102 @@ const Admin = () => {
     }
   }, [isLoggedIn]);
 
-  const loadRequests = () => {
-    const data = JSON.parse(localStorage.getItem('whitepaperRequests') || '[]');
-    // 按时间倒序排列
-    data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    setRequests(data);
+  const loadRequests = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_BASE}/whitepaper-requests`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRequests(data);
+      }
+    } catch (error) {
+      console.error('Failed to load requests:', error);
+    }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // 简单的登录验证
-    if (loginForm.username === 'admin' && loginForm.password === '@shisizhichuang') {
-      sessionStorage.setItem('adminLoggedIn', 'true');
-      setIsLoggedIn(true);
-      setLoginError('');
-    } else {
-      setLoginError('用户名或密码错误');
+    setIsLoading(true);
+    setLoginError('');
+
+    try {
+      const response = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(loginForm)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.token) {
+        localStorage.setItem('adminToken', data.token);
+        setIsLoggedIn(true);
+        setLoginError('');
+      } else {
+        setLoginError(data.error || '登录失败');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoginError('网络错误，请稍后重试');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('adminLoggedIn');
+    localStorage.removeItem('adminToken');
     setIsLoggedIn(false);
   };
 
-  const updateStatus = (id, newStatus) => {
-    const updated = requests.map(req =>
-      req.id === id ? { ...req, status: newStatus } : req
-    );
-    setRequests(updated);
-    localStorage.setItem('whitepaperRequests', JSON.stringify(updated));
+  const updateStatus = async (id, newStatus) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_BASE}/whitepaper-requests/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (response.ok) {
+        const updated = requests.map(req =>
+          req.id === id ? { ...req, status: newStatus } : req
+        );
+        setRequests(updated);
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
   };
 
-  const deleteRequest = (id) => {
-    if (window.confirm('确定要删除这条申请记录吗？')) {
-      const updated = requests.filter(req => req.id !== id);
-      setRequests(updated);
-      localStorage.setItem('whitepaperRequests', JSON.stringify(updated));
+  const deleteRequest = async (id) => {
+    if (!window.confirm('确定要删除这条申请记录吗？')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_BASE}/whitepaper-requests/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const updated = requests.filter(req => req.id !== id);
+        setRequests(updated);
+      }
+    } catch (error) {
+      console.error('Failed to delete request:', error);
     }
   };
 
@@ -142,9 +223,10 @@ const Admin = () => {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-[#002B5B] hover:bg-[#003875] text-white rounded-lg font-semibold transition-colors"
+                disabled={isLoading}
+                className="w-full py-3 bg-[#002B5B] hover:bg-[#003875] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                登录
+                {isLoading ? '登录中...' : '登录'}
               </button>
             </form>
 

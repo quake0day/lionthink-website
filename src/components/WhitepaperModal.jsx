@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { X, FileText, CheckCircle } from 'lucide-react';
 
+const API_BASE = 'http://localhost:3001/api';
+
 const WhitepaperModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -9,31 +11,41 @@ const WhitepaperModal = ({ isOpen, onClose }) => {
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
 
-    // 保存到 localStorage
-    const requests = JSON.parse(localStorage.getItem('whitepaperRequests') || '[]');
-    const newRequest = {
-      ...formData,
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      status: '待处理'
-    };
-    requests.push(newRequest);
-    localStorage.setItem('whitepaperRequests', JSON.stringify(requests));
+    try {
+      const response = await fetch(`${API_BASE}/whitepaper-requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
 
-    setTimeout(() => {
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsSubmitted(true);
+      } else {
+        setError(data.error || '提交失败，请稍后重试');
+      }
+    } catch (err) {
+      console.error('Submit error:', err);
+      setError('网络错误，请稍后重试');
+    } finally {
       setIsSubmitting(false);
-      setIsSubmitted(true);
-    }, 500);
+    }
   };
 
   const handleClose = () => {
     setFormData({ name: '', organization: '', email: '' });
     setIsSubmitted(false);
+    setError('');
     onClose();
   };
 
@@ -118,6 +130,10 @@ const WhitepaperModal = ({ isOpen, onClose }) => {
                   />
                 </div>
 
+                {error && (
+                  <p className="text-red-500 text-sm text-center">{error}</p>
+                )}
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -139,8 +155,7 @@ const WhitepaperModal = ({ isOpen, onClose }) => {
               </div>
               <h3 className="text-2xl font-bold text-slate-900 mb-2">申请成功!</h3>
               <p className="text-slate-500 mb-6">
-                感谢您的申请，我们将在 1-2 个工作日内<br/>
-                将白皮书发送至 <span className="text-[#002B5B] font-medium">{formData.email}</span>
+                感谢您的申请，我们将在 1-2 个工作日内<br/>将白皮书发送至 <span className="text-[#002B5B] font-medium">{formData.email}</span>
               </p>
               <button
                 onClick={handleClose}
