@@ -5,6 +5,7 @@ import {
   Database, Brain, BarChart3, GraduationCap,
   Building2, Users, ArrowRight, CheckCircle2
 } from 'lucide-react';
+import WhitepaperModal from './components/WhitepaperModal';
 
 // --- 组件部分 ---
 
@@ -91,7 +92,7 @@ const Navbar = () => {
 };
 
 // 首屏 Hero - 科技感蓝白风格
-const Hero = () => {
+const Hero = ({ onWhitepaperClick }) => {
   return (
       <section id="home" className="relative min-h-screen flex items-center pt-28 pb-20 overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50">
         {/* 动态渐变光晕背景 */}
@@ -360,8 +361,10 @@ const Hero = () => {
                 预约产品演示
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
-              <button className="px-8 py-4 bg-white/80 hover:bg-white text-slate-700 border border-slate-200 rounded-xl font-semibold flex items-center justify-center transition-all hover:shadow-lg backdrop-blur-sm">
-                下载白皮书 (PDF)
+              <button
+                onClick={onWhitepaperClick}
+                className="px-8 py-4 bg-white/80 hover:bg-white text-slate-700 border border-slate-200 rounded-xl font-semibold flex items-center justify-center transition-all hover:shadow-lg backdrop-blur-sm">
+                申请技术白皮书
               </button>
             </div>
 
@@ -790,7 +793,7 @@ const Solutions = () => {
 };
 
 // 页脚 - 使用深海蓝背景
-const Footer = () => {
+const Footer = ({ onWhitepaperClick }) => {
   return (
       <footer id="footer" className="bg-[#002B5B] text-white pt-20 pb-10 border-t border-blue-900">
         <div className="container mx-auto px-6 grid md:grid-cols-4 gap-12 mb-16">
@@ -839,8 +842,10 @@ const Footer = () => {
                 高校合作: edu@sszc.ai
               </li>
               <li className="mt-4">
-                <button className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-sm transition-colors text-white">
-                  下载技术白皮书
+                <button
+                  onClick={onWhitepaperClick}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-sm transition-colors text-white">
+                  申请技术白皮书
                 </button>
               </li>
             </ul>
@@ -860,14 +865,20 @@ const Footer = () => {
 
 // 主应用入口
 const App = () => {
+  const [isWhitepaperModalOpen, setIsWhitepaperModalOpen] = useState(false);
+
   return (
       <div className="font-sans antialiased text-slate-900 bg-white selection:bg-blue-100 selection:text-blue-900">
         <Navbar />
-        <Hero />
+        <Hero onWhitepaperClick={() => setIsWhitepaperModalOpen(true)} />
         <Products />
         <Engine />
         <Solutions />
-        <Footer />
+        <Footer onWhitepaperClick={() => setIsWhitepaperModalOpen(true)} />
+        <WhitepaperModal
+          isOpen={isWhitepaperModalOpen}
+          onClose={() => setIsWhitepaperModalOpen(false)}
+        />
       </div>
   );
 };
